@@ -67,7 +67,7 @@ namespace SudokuSolver
 
             return boundary;
         }
-
+        
         private IEnumerable<int> ValuesInThe9x9BlockOf(Board board, Cell cell)
         {
             var blockBoundary = Get9x9BlockOf(cell);
@@ -78,8 +78,8 @@ namespace SudokuSolver
 
                 foreach (var cellOfRow in cells)
                     if (cellOfRow.Column >= blockBoundary.LowerColumn && cellOfRow.Column <= blockBoundary.UpperColumn)
-                        if(cellOfRow.CurrentNumber.HasValue)
-                            yield return cellOfRow.CurrentNumber.Value; 
+                        if (cellOfRow.CurrentNumber.HasValue)
+                            yield return cellOfRow.CurrentNumber.Value;
             }
         }
 
@@ -109,22 +109,53 @@ namespace SudokuSolver
         private IEnumerable<KnightStep> KnightSteps;
         public IEnumerable<int> ValuesWithinKnightStep(Board board, Cell cell)
         {
-            foreach(var step in KnightSteps)
+            foreach (var step in KnightSteps)
             {
                 int row = cell.Row - step.Left + step.Right;
                 int column = cell.Column - step.Top + step.Bottom;
-            
-                if(row >= 0 && row <= 8 && column >= 0 && column <= 8)
+
+                if (row >= 0 && row <= 8 && column >= 0 && column <= 8)
                 {
                     var cellsOfRow = board.CellsByRow[row];
-                    var cellOfRow = cellsOfRow.First(x => x.Column == column);
+                    var cellOfRow = cellsOfRow[column];
 
-                    if(cellOfRow.CurrentNumber.HasValue)
+                    if (cellOfRow.CurrentNumber.HasValue)
                         yield return cellOfRow.CurrentNumber.Value;
                 }
             }
         }
 
+        private IEnumerable<Cell> ListOrthogonallyAdjacentCells(Board board, Cell cell)
+        {
+            var cellRow = board.CellsByRow[cell.Row];
+            var cellColumn = board.CellsByColumn[cell.Column];
+
+            if (cell.Column > 0)
+            {
+                var columnIndex = cell.Column - 1;
+                yield return cellRow[columnIndex];
+            }
+
+            if (cell.Column < 8)
+            {
+                var columnIndex = cell.Column + 1;
+                yield return cellRow[columnIndex];
+            }
+
+            if (cell.Row > 0)
+            {
+                var rowIndex = cell.Row - 1;
+                yield return cellColumn[rowIndex];
+            }
+
+            if (cell.Row < 8)
+            {
+                var rowIndex = cell.Row + 1;
+                yield return cellColumn[rowIndex];
+            }
+        }
+
+        /*
         private IEnumerable<Cell> ListOrthogonallyAdjacentCells(Board board, Cell cell)
         {
             var cellRow = board.CellsByRow[cell.Row];
@@ -154,6 +185,54 @@ namespace SudokuSolver
                 yield return cellColumn.First(x => x.Row == rowIndex);
             }
         }
+        */
+
+
+        /*
+        public IEnumerable<int> ValuesWithinKnightStep(Board board, Cell cell)
+        {
+            foreach(var step in KnightSteps)
+            {
+                int row = cell.Row - step.Left + step.Right;
+                int column = cell.Column - step.Top + step.Bottom;
+            
+                if(row >= 0 && row <= 8 && column >= 0 && column <= 8)
+                {
+                    var cellOfRow = board.GetCell(row, column);
+
+                    if(cellOfRow.CurrentNumber.HasValue)
+                        yield return cellOfRow.CurrentNumber.Value;
+                }
+            }
+        }
+
+        private IEnumerable<Cell> ListOrthogonallyAdjacentCells(Board board, Cell cell)
+        {
+            if (cell.Column > 0)
+            {
+                var columnIndex = cell.Column - 1;
+                yield return board.GetCell(cell.Row, columnIndex);
+            }
+
+            if (cell.Column < 8)
+            {
+                var columnIndex = cell.Column + 1;
+                yield return board.GetCell(cell.Row, columnIndex);
+            }
+
+            if (cell.Row > 0)
+            {
+                var rowIndex = cell.Row - 1;
+                yield return board.GetCell(rowIndex, cell.Column);
+            }
+
+            if (cell.Row < 8)
+            {
+                var rowIndex = cell.Row + 1;
+                yield return board.GetCell(rowIndex, cell.Column);
+            }
+        }
+        */
 
         private IEnumerable<int> ConsecutiveValuesForOrthogonallyAdjacentCells(Board board, Cell cell)
         {
