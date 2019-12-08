@@ -12,11 +12,12 @@ namespace SudokuSolver
         // Parameter 2: Cell analyzed
         // Returns: Values the cell (parameter 2) CANNOT have
         private List<Func<Board, Cell, IEnumerable<int>>> ValuesToNotRepeat;
+        //public ThermometerBoardSet Thermometers;
 
         public BoardRule()
         {
-            ValuesToNotRepeat = new List<Func<Board, Cell, IEnumerable<int>>>();
-            KnightSteps = KnightStep.GetSteps().ToList();
+            this.ValuesToNotRepeat = new List<Func<Board, Cell, IEnumerable<int>>>();
+            this.KnightSteps = KnightStep.GetSteps().ToList();
         }
 
         public BoardRule ActivateUniqueInsideRow() { ValuesToNotRepeat.Add(ValuesInTheRowOf); return this; }
@@ -25,6 +26,16 @@ namespace SudokuSolver
         public BoardRule ActivateUniqueOrthogonallyAdjacent() { ValuesToNotRepeat.Add(ValuesOrthogonallyAdjacent); return this; }
         public BoardRule ActivateNonConsecutiveOrthogonallyAdjacent() { ValuesToNotRepeat.Add(ConsecutiveValuesForOrthogonallyAdjacentCells); return this; }
         public BoardRule ActivateUniqueOnKnightStep() { ValuesToNotRepeat.Add(ValuesWithinKnightStep); return this; }
+        public BoardRule ActivateThermometers(Action<ThermometerBoardSet> action)
+        {
+            var thermometerSet = new ThermometerBoardSet(this);
+            action(thermometerSet);
+
+            ValuesToNotRepeat.Add((board, cell) => thermometerSet.GetImpossibleValuesForCell(board, cell));
+            //Thermometers = thermometerSet;
+
+            return this;
+        }
 
         public class BlockBoundary
         {
@@ -175,55 +186,164 @@ namespace SudokuSolver
         
         public int[] GetPossibleNumbers(Board board, Cell cell)
         {
-            PossibleNumbers possibleNumbers = new PossibleNumbers();
+            ValuesPool possibleNumbers = new ValuesPool();
 
             var unavailableValues = ValuesToNotRepeat.SelectMany(x => x(board, cell));
 
             foreach(var unavailableValue in unavailableValues)
                 possibleNumbers.MakeUnavailable(unavailableValue);
                 
-            return possibleNumbers.GetPossibleValues().ToArray();
+            return possibleNumbers.GetAvailableValues().ToArray();
         }
 
-        private class PossibleNumbers
+        public class ThermometerBoardSet
         {
-            public bool Number1 = true;
-            public bool Number2 = true;
-            public bool Number3 = true;
-            public bool Number4 = true;
-            public bool Number5 = true;
-            public bool Number6 = true;
-            public bool Number7 = true;
-            public bool Number8 = true;
-            public bool Number9 = true;
-            
-            public void MakeUnavailable(int value)
+            private BoardRule Rules;
+            public List<Thermometer> Thermometers;
+
+            public ThermometerBoardSet(BoardRule rules)
             {
-                switch(value)
+                this.Rules = rules;
+                this.Thermometers = new List<Thermometer>();
+            }
+
+            public ThermometerBuilder CreateThermometerBuilder(int row, int column)
+            {
+                return new ThermometerBuilder(this, row, column);
+            }
+
+            public IEnumerable<int> GetImpossibleValuesForCell(Board board, Cell cellChecked)
+            {
+                foreach (var thermometer in Thermometers)
                 {
-                    case 1: Number1 = false; break;
-                    case 2: Number2 = false; break;
-                    case 3: Number3 = false; break;
-                    case 4: Number4 = false; break;
-                    case 5: Number5 = false; break;
-                    case 6: Number6 = false; break;
-                    case 7: Number7 = false; break;
-                    case 8: Number8 = false; break;
-                    case 9: Number9 = false; break;
+                    var themoDataForCellChecked = thermometer.GetDataForCell(cellChecked);
+
+                    if(themoDataForCellChecked != null)
+                    {
+                        #region Sequencial thermometer (unusual)
+                        // This code was created for sequencial thermometers (1, 2, 3...).
+                        // Thermometers usually are not sequencial, they just need to get bigger (2, 4, 8...)
+
+                        /*
+                        // Check if any cell inside the thermometer is already set - this should define the entire sequence of the thermometer
+                        bool sequenceIsFixed = false;
+                        foreach (var thermoData in thermometer.CoordinateDatas)
+                        {
+                            var cellFromThermometer = board.CellsByRow[thermoData.Row].First(boardCell => boardCell.Column == thermoData.Column);
+
+                            if(cellFromThermometer.CurrentNumber.HasValue)
+                            {
+                                // If any cell inside the thermometer already has a value defined, all the numbers that don't satisfy the sequence are impossible
+                                int onlyValidNumber;
+
+                                int difference = thermoData.SequenceIndex - themoDataForCellChecked.SequenceIndex;
+                                if (difference < 0) difference = -difference;
+
+                                if (thermoData.SequenceIndex > themoDataForCellChecked.SequenceIndex)
+                                    onlyValidNumber = cellFromThermometer.CurrentNumber.Value - difference;
+                                else
+                                    onlyValidNumber = cellFromThermometer.CurrentNumber.Value + difference;
+
+                                foreach (var impossibleNumber in new AvailableValues().MakeUnavailable(onlyValidNumber).GetAvailableValues())
+                                    yield return impossibleNumber;
+
+                                sequenceIsFixed = true;
+                                break;
+                            }
+                        }
+
+                        if (!sequenceIsFixed)
+                        {
+                            foreach (var value in themoDataForCellChecked.ImpossibleValues)
+                            {
+                                yield return value;
+                            }
+                        }
+                        */
+                        #endregion
+
+                        foreach (var thermoData in thermometer.CoordinateDatas)
+                        {
+                            var cellFromThermometer = board.GetCell(cellChecked.Row, cellChecked.Column);
+
+                            if (cellFromThermometer.CurrentNumber.HasValue)
+                            {
+                                var validNumbers = new ValuesPool();
+                                
+                                if(themoDataForCellChecked.SequenceIndex < thermoData.SequenceIndex)
+                                {
+                                    validNumbers.MakeUnavailableIfBiggerThan(cellFromThermometer.CurrentNumber.Value);
+                                }
+                                else
+                                {
+                                    validNumbers.MakeUnavailableIfSmallerThan(cellFromThermometer.CurrentNumber.Value);
+                                }
+
+                                validNumbers.MakeUnavailable(cellFromThermometer.CurrentNumber.Value);
+
+                                // Method return invalid numbers
+                                foreach (var impossibleValues in validNumbers.CreateReverse().GetAvailableValues())
+                                    yield return impossibleValues;
+
+                                break;
+                            }
+                        }
+
+                        foreach (var value in themoDataForCellChecked.ImpossibleValues)
+                        {
+                            yield return value;
+                        }
+                    }
                 }
             }
 
-            public IEnumerable<int> GetPossibleValues()
+            public override string ToString()
             {
-                if (Number1) yield return 1;
-                if (Number2) yield return 2;
-                if (Number3) yield return 3;
-                if (Number4) yield return 4;
-                if (Number5) yield return 5;
-                if (Number6) yield return 6;
-                if (Number7) yield return 7;
-                if (Number8) yield return 8;
-                if (Number9) yield return 9;
+                List<string> c = new List<string>();
+
+                for (var row = 0; row < 9; row++)
+                {
+                    for (var column = 0; column < 9; column++)
+                    {
+                        var coordinateData = Thermometers.SelectMany(x => x.CoordinateDatas).FirstOrDefault(x => x.Row == row && x.Column == column);
+
+                        if (coordinateData == null)
+                            c.Add(" ");
+                        else
+                            c.Add($"{coordinateData.SequenceIndex}");
+                    }
+
+                    c.Add(Environment.NewLine);
+                }
+
+                return string.Join(string.Empty, c);
+            }
+
+
+            public class ThermometerBuilder
+            {
+                private ThermometerBoardSet ThermometerBoardSet;
+                private List<Coordinate> Coordinates;
+
+                public ThermometerBuilder(ThermometerBoardSet thermometerBoardSet, int row, int column)
+                {
+                    this.ThermometerBoardSet = thermometerBoardSet;
+                    this.Coordinates = new List<Coordinate>();
+                    this.Coordinates.Add(new Coordinate(row, column));
+                }
+
+                public ThermometerBuilder AddSequence(int row, int column)
+                {
+                    this.Coordinates.Add(new Coordinate(row, column));
+                    return this;
+                }
+
+                public Thermometer Build()
+                {
+                    var thermometer = new Thermometer(Coordinates);
+                    ThermometerBoardSet.Thermometers.Add(thermometer);
+                    return thermometer;
+                }
             }
         }
     }

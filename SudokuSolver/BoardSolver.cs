@@ -30,7 +30,7 @@ namespace SudokuSolver
                 foreach (var combination in combinations)
                 {
                     var nextCompleteBoards = GenerateCompleteBoards(combination, rules);
-
+                    
                     foreach (var nextCompleteBoard in nextCompleteBoards)
                         yield return nextCompleteBoard;
                 }

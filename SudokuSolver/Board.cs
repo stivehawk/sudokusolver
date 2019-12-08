@@ -42,6 +42,11 @@ namespace SudokuSolver
             }
         }
 
+        public Cell GetCell(int row, int column)
+        {
+            return CellsByRow[row].First(x => x.Column == column);
+        }
+
         public Board CreateChildBoard(Cell changedCell, int newValue)
         {
             List<Cell> cellsForNewBoard = new List<Cell>(Cells.Length);
@@ -66,7 +71,7 @@ namespace SudokuSolver
 
         public IEnumerable<Board> NextBestBoards(BoardRule rules)
         {
-            var cellToChange = Cells
+            var cells = Cells
                 .Where(x => !x.CurrentNumber.HasValue)
                 .Select(x => new
                 {
@@ -74,13 +79,11 @@ namespace SudokuSolver
                     PossibleNumbers = rules.GetPossibleNumbers(this, x)
                 })
                 .OrderBy(x => x.PossibleNumbers.Length)
-                .FirstOrDefault();
+                .ToList();
 
-            //if(cellToChange.Cell.Row > 0)
-            //{
-            //    var breaker = 0;
-            //}
 
+            var cellToChange = cells.FirstOrDefault();
+            
             foreach(var possibleValue in cellToChange.PossibleNumbers)
             {
                 var newBoard = CreateChildBoard(cellToChange.Cell, possibleValue);
