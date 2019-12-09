@@ -20,15 +20,15 @@ namespace SudokuSolver
         {
             switch (value)
             {
-                case 1: Number1 = false; break;
-                case 2: Number2 = false; break;
-                case 3: Number3 = false; break;
-                case 4: Number4 = false; break;
-                case 5: Number5 = false; break;
-                case 6: Number6 = false; break;
-                case 7: Number7 = false; break;
-                case 8: Number8 = false; break;
-                case 9: Number9 = false; break;
+                case 1: if (Number1) Number1 = false; break;
+                case 2: if (Number2) Number2 = false; break;
+                case 3: if (Number3) Number3 = false; break;
+                case 4: if (Number4) Number4 = false; break;
+                case 5: if (Number5) Number5 = false; break;
+                case 6: if (Number6) Number6 = false; break;
+                case 7: if (Number7) Number7 = false; break;
+                case 8: if (Number8) Number8 = false; break;
+                case 9: if (Number9) Number9 = false; break;
             }
 
             return this;

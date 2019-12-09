@@ -43,12 +43,68 @@ namespace SudokuSolver
             BoardRule rule = new BoardRule()
                 .ActivateUniqueInsideColumn()
                 .ActivateUniqueInsideRow()
-                .ActivateUniqueInside9x9Block()
-                .ActivateUniqueOrthogonallyAdjacent()
+                
+                .ActivateUniqueInside3x3Blocks();
+                //.ActivateCustomAreasForUniqueValues(areas =>
+                //{
+                //    // Default 9 3x3 areas. No need to activate this + UniqueInside3x3Blocks
+                //    areas.RegisterAreasByParsingBoard
+                //    (
+                //        @"AAABBBCCC",
+                //        @"AAABBBCCC",
+                //        @"AAABBBCCC",
+                //        @"DDDEEEFFF",
+                //        @"DDDEEEFFF",
+                //        @"DDDEEEFFF",
+                //        @"GGGHHHIII",
+                //        @"GGGHHHIII",
+                //        @"GGGHHHIII"
+                //    );
+                //
+                //    // Custom Aad Van De Wetering sudoku - Example of: https://www.youtube.com/watch?v=f5GWiAIZXGI
+                //    // areas.RegisterAreasByParsingBoard
+                //    // (
+                //    //     @"AAABBBCZC",
+                //    //     @"ZAABBBCCC",
+                //    //     @"AAAABZCCC",
+                //    //     @"DDZDBBCFF",
+                //    //     @"DDDDZFFFF",
+                //    //     @"DDGHHFZFF",
+                //    //     @"GGGZHIIII",
+                //    //     @"GGGHHHIIZ",
+                //    //     @"GZGHHHIII"
+                //    // );
+                //
+                //    /*
+                //    areas.CreateUniqueValuesAreaBuilder(0, 0)
+                //        .AddCoordinate(1, 1)
+                //        .AddCoordinate(2, 2)
+                //        .AddCoordinate(3, 3)
+                //        .AddCoordinate(4, 4)
+                //        .AddCoordinate(5, 5)
+                //        .AddCoordinate(6, 6)
+                //        .AddCoordinate(7, 7)
+                //        .AddCoordinate(8, 8)
+                //        .Build();
+                //
+                //    areas.CreateUniqueValuesAreaBuilder(0, 8)
+                //        .AddCoordinate(1, 7)
+                //        .AddCoordinate(2, 6)
+                //        .AddCoordinate(3, 5)
+                //        .AddCoordinate(4, 4)
+                //        .AddCoordinate(5, 3)
+                //        .AddCoordinate(6, 2)
+                //        .AddCoordinate(7, 1)
+                //        .AddCoordinate(8, 0)
+                //        .Build();
+                //        */
+                //});
+
+                //.ActivateUniqueOrthogonallyAdjacent()
 
                 // NonConsecutiveOrthogonallyAdjacent + UniqueOnKnightStep - Example of: https://www.youtube.com/watch?v=QNzltTzv0fc
-                .ActivateNonConsecutiveOrthogonallyAdjacent()
-                .ActivateUniqueOnKnightStep();
+                //.ActivateNonConsecutiveOrthogonallyAdjacent()
+                //.ActivateUniqueOnKnightStep();
             
                 // Thermometers - Example of: https://www.youtube.com/watch?v=KTth49YrQVU
                 //.ActivateThermometers(set =>
@@ -133,23 +189,30 @@ namespace SudokuSolver
             */
 
             BoardSolver solver = new BoardSolver();
-            var results = solver.SolveAll(board, rule);
+            var results = solver.SolveAll(board, rule, null);
             var count = 0;
 
             foreach (var result in results)
             {
                 count++;
-                Console.Write(result.ToString());
-                // Console.ReadLine();
+                DisplayBoard(result);
 
-                Console.WriteLine();
-                Console.WriteLine("------------------------------");
-                Console.WriteLine();
+                Console.ReadLine();
             }
 
             Console.Write("End of solutions");
 
             Console.ReadLine();
+        }
+
+        private static void DisplayBoard(Board board)
+        {
+            Console.Write(board.ToString());
+            // Console.ReadLine();
+
+            Console.WriteLine();
+            Console.WriteLine("------------------------------");
+            Console.WriteLine();
         }
     }
 }

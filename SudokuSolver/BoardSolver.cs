@@ -7,17 +7,17 @@ namespace SudokuSolver
 {
     public class BoardSolver
     {
-        public Board Solve(Board board, BoardRule rules)
+        public Board Solve(Board board, BoardRule rules, Action<Board> onStep = null)
         {
-            return SolveAll(board, rules).FirstOrDefault();
+            return SolveAll(board, rules, onStep).FirstOrDefault();
         }
 
-        public IEnumerable<Board> SolveAll(Board board, BoardRule rules)
+        public IEnumerable<Board> SolveAll(Board board, BoardRule rules, Action<Board> onStep = null)
         {
-            return GenerateCompleteBoards(board, rules);
+            return GenerateCompleteBoards(board, rules, onStep);
         }
 
-        private IEnumerable<Board> GenerateCompleteBoards(Board board, BoardRule rules)
+        private IEnumerable<Board> GenerateCompleteBoards(Board board, BoardRule rules, Action<Board> onStep = null)
         {
             if (board.IsComplete())
             {
@@ -26,10 +26,12 @@ namespace SudokuSolver
             else
             {
                 var combinations = board.NextBestBoards(rules);
-
+                
                 foreach (var combination in combinations)
                 {
-                    var nextCompleteBoards = GenerateCompleteBoards(combination, rules);
+                    onStep?.Invoke(combination);
+
+                    var nextCompleteBoards = GenerateCompleteBoards(combination, rules, onStep);
                     
                     foreach (var nextCompleteBoard in nextCompleteBoards)
                         yield return nextCompleteBoard;

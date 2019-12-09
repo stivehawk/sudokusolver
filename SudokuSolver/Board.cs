@@ -130,27 +130,50 @@ namespace SudokuSolver
 
         //private static Random Random = new Random();
 
+        private CellToChange SelectNextCellToChange(BoardRule rules)
+        {
+            CellToChange cellWithLessPossibilities = null;
+
+            foreach (var cell in Cells)
+            {
+                if(!cell.CurrentNumber.HasValue)
+                {
+                    var possibleNumbers = rules.GetPossibleNumbers(this, cell);
+
+                    if(cellWithLessPossibilities == null || cellWithLessPossibilities.PossibleNumbers.Length > possibleNumbers.Length)
+                    {
+                        cellWithLessPossibilities = new CellToChange()
+                        {
+                            Cell = cell,
+                            PossibleNumbers = possibleNumbers
+                        };
+                    }
+
+                    // Shortcut to not process cells when there's a best one already
+                    // Has the drawback of not identifying cells with 0 possibilities if there's a cell with 1 before
+                    if (cellWithLessPossibilities.PossibleNumbers.Length <= 1)
+                        return cellWithLessPossibilities;
+                }
+            }
+
+            return cellWithLessPossibilities;
+        }
+
         public IEnumerable<Board> NextBestBoards(BoardRule rules)
         {
-            var cellToChange = Cells
-                .Where(x => !x.CurrentNumber.HasValue)
-                .Select(x => new
-                {
-                    Cell = x,
-                    PossibleNumbers = rules.GetPossibleNumbers(this, x)
-                })
-                .OrderBy(x => x.PossibleNumbers.Length)
-                //.ThenBy(x => Random.Next())
-                .FirstOrDefault();
-
-
-            //var cellToChange = cells.FirstOrDefault();
+            var cellToChange = SelectNextCellToChange(rules);
             
-            foreach(var possibleValue in cellToChange.PossibleNumbers)
+            foreach (var possibleValue in cellToChange.PossibleNumbers)
             {
                 var newBoard = CreateChildBoard(cellToChange.Cell, possibleValue);
                 yield return newBoard;
             }
+        }
+
+        private class CellToChange
+        {
+            public Cell Cell;
+            public int[] PossibleNumbers;
         }
 
         public bool IsComplete()
